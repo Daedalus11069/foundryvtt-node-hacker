@@ -321,7 +321,7 @@ export default class HackSession {
    * still requires the same access a normal capture would (reachable from a node already held),
    * it just skips rolling. */
   async nukeNode(node: HackNode): Promise<boolean> {
-    if (!this.actor || !node.canBeCaptured(false)) return false;
+    if (!this.actor || !node.canBeCaptured(false, this.getActiveNode(Side.HACKER))) return false;
     const items = this.items.getNukeItems(this.actor);
     if (items.length === 0) return false;
 

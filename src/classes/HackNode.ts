@@ -1,5 +1,6 @@
 import { NodeType, Side } from "@/constants";
 import HackConnection from "./HackConnection";
+import CaptureRangeConfig from "./CaptureRangeConfig";
 
 export interface DatabaseReward {
   /** Item kind granted on successful hack of this database node. */
@@ -102,10 +103,9 @@ export default class HackNode {
     return this.capturing === (trace ? Side.TRACE : Side.HACKER);
   }
 
-  /** @deprecated no longer used by canBeCaptured (see that method's comment) - reachability
-   * is now adjacency to that side's specific current-position node, not to ANY node they
-   * happen to own. Kept only in case some external caller still wants "is this touching my
-   * territory at all" as a broader check. */
+  /** The "loose" reachability rule canBeCaptured falls back to when CaptureRangeConfig.isStrict()
+   * is off: touching ANY node this side owns anywhere on the graph, not just its specific
+   * current-position node. */
   isConnectedToOwnedBy(side: Side): boolean {
     const trace = side === Side.TRACE;
     return this.connections.some((conn) => {
@@ -126,17 +126,21 @@ export default class HackNode {
   }
 
   /** Can this side attempt the node right now: not already theirs, nobody else mid-attempt,
-   * and directly adjacent to `activeNode` - that side's own current-position node
-   * (HackSession.activeNodeKey for the hacker, HackSession.traceActiveNodeKey for the trace
-   * side), not just adjacent to SOME node they happen to own elsewhere on the graph. A side
-   * that holds three separate, non-adjacent pockets of territory can only ever attack out
-   * from wherever they're actually standing, same as the hacker's own free movement between
-   * owned nodes (see HackSession.moveTo) only ever repositions that one marker rather than
-   * acting everywhere at once. No activeNode (shouldn't happen once a session's actually
-   * running - see HackSession's constructor/attemptCapture) means nothing is reachable. */
+   * and reachable - exactly what "reachable" means depends on CaptureRangeConfig (a GM-facing
+   * world setting):
+   *  - Strict (default): directly adjacent to `activeNode`, that side's own current-position
+   *    node (HackSession.activeNodeKey for the hacker, HackSession.traceActiveNodeKey for the
+   *    trace side). A side holding three separate, non-adjacent pockets of territory can only
+   *    ever attack out from wherever it's actually standing, same as the hacker's own free
+   *    movement between owned nodes (see HackSession.moveTo) only ever repositions that one
+   *    marker rather than acting everywhere at once. No activeNode (shouldn't happen once a
+   *    session's actually running) means nothing is reachable.
+   *  - Loose: adjacent to ANY node this side owns anywhere on the graph (isConnectedToOwnedBy) -
+   *    the rule from before per-side movement existed; `activeNode` is ignored entirely. */
   canBeCaptured(trace = false, activeNode: HackNode | null = null): boolean {
     const side = trace ? Side.TRACE : Side.HACKER;
     if (this.owner === side || this.capturing !== null) return false;
+    if (!CaptureRangeConfig.isStrict()) return this.isConnectedToOwnedBy(side);
     if (!activeNode) return false;
     return this.isAdjacentTo(activeNode);
   }

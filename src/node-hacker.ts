@@ -4,6 +4,7 @@ import NodeHackerApi from "@/api/NodeHackerApi";
 import ManagedSession from "@/managed/ManagedSession";
 import HackSession from "@/classes/HackSession";
 import SessionPersistence from "@/classes/SessionPersistence";
+import CaptureRangeConfig from "@/classes/CaptureRangeConfig";
 import HackerApp from "@/apps/HackerApp";
 import GmTraceApp from "@/apps/GmTraceApp";
 import PlayerManagedApp from "@/apps/PlayerManagedApp";
@@ -26,9 +27,11 @@ export { default as CheckResolver } from "@/api/CheckResolver";
 export { default as ItemConfig } from "@/api/ItemConfig";
 export { default as ManagedSession } from "@/managed/ManagedSession";
 export { default as NodeHackerApi } from "@/api/NodeHackerApi";
+export { default as CaptureRangeConfig } from "@/classes/CaptureRangeConfig";
 
 Hooks.once("init", () => {
   console.log(`${MODULE_ID} | Initializing`);
+  CaptureRangeConfig.register();
 });
 
 (Hooks.once as (hook: string, fn: (...args: any[]) => any) => number)("socketlib.ready", () => {
