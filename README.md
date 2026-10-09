@@ -14,6 +14,18 @@ Requires the [socketlib](https://github.com/manuelVo/foundryvtt-socketlib) modul
 GM-managed sessions, and optionally [libwrapper](https://github.com/ruipin/fvtt-lib-wrapper)
 for third parties hooking module internals directly.
 
+## Untested features
+
+Implemented and built, but not yet run through an actual live session - treat as "should
+work, not yet confirmed":
+
+- **PvP (GM-managed, `startManaged`)**: the full GM-vs-player flow - `GmTraceApp`'s manual
+  Capture/Fortify/Move context menu, the automatic per-combat-turn advance, socketlib
+  request/broadcast round-tripping, and the active-node adjacency rule's interaction with
+  the "Strict capture adjacency" setting - has only been exercised by reading the code, not
+  by actually playing a managed session end-to-end with a second client. Solo play has been
+  used directly and is not included in this caveat.
+
 ## Concepts
 
 - **Node difficulty**: each node's number is the difficulty rating fed to `CheckResolver`,
