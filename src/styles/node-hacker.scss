@@ -1,0 +1,1088 @@
+// Shell background, header, panel+map grid, circular glowing nodes, drop-shadow links, and
+// dashed-vs-solid path states. Ownership coloring (blue = hacker, red = trace/server).
+$nh-bg-deep: #05070d;
+$nh-surface: rgba(5, 20, 29, 0.72);
+$nh-line: rgba(93, 245, 255, 0.22);
+$nh-cyan: #64f7ff;
+$nh-muted: #9ffcff;
+$nh-text: #f5feff;
+$nh-hacker-color: #00a1ff; // hacker/player capture (blue, matches minigame-test's $capture-color)
+$nh-trace-color: #e03d3c; // trace/server capture (red, matches minigame-test's $server-capture-color)
+$nh-warn: #ffe66f;
+
+// CSS min-width on the actual Foundry window element (not just a default `width` in each
+// App's defaultOptions) - Foundry's own resize drag calls setPosition with a plain number,
+// which CSS min-width still overrides if it'd go smaller, so this is a hard floor
+// regardless of what the user drags to or what any future default width change does.
+#node-hacker-hacker-app,
+#node-hacker-gm-trace-app,
+#node-hacker-player-managed-app,
+#node-hacker-designer-app {
+  min-width: 800px;
+}
+
+.node-hacker-app,
+.node-hacker-designer-app {
+  .window-content {
+    padding: 0px;
+  }
+}
+
+.node-hacker-vue-root {
+  color: $nh-text;
+  font-family: "Signika", "Segoe UI", sans-serif;
+  // Foundry measures an "auto" height Application against its template's raw markup at
+  // first render, before Vue's mount has put any content into this placeholder div - a
+  // min-height here (rather than relying on a JS re-measure after mount) means that first
+  // measurement already sees real space, since this rule applies the instant the
+  // stylesheet loads, well before the window itself ever opens.
+  display: block;
+  min-height: 480px;
+
+  // A <select>'s own closed box picks up color/background set on it directly, but Chromium
+  // renders the opened dropdown *list* with each <option>'s inherited text color against the
+  // OS's own default (light) popup background, not the select's background - every option
+  // here inherited our near-white text color with nothing dark behind it, unreadable except
+  // the one entry the OS highlights on hover/selection.
+  select option {
+    background: $nh-bg-deep;
+    color: $nh-text;
+  }
+}
+
+.nh-shell {
+  position: relative;
+  box-sizing: border-box;
+  padding: 16px;
+  height: 100%;
+  background:
+    linear-gradient(rgba($nh-cyan, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba($nh-cyan, 0.05) 1px, transparent 1px),
+    $nh-bg-deep;
+  background-size:
+    24px 24px,
+    24px 24px,
+    auto;
+}
+
+// A result splash shown in place of the graph itself once a session completes, not a
+// separate popup window - simpler and more reliable than trying to auto-close the app out
+// from under whoever's reading the result. It replaces .nh-shell's whole content area
+// (see HackerView/PlayerManagedView/GmTraceView), so it gets the same dark backdrop.
+.nh-splash {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 420px;
+  padding: 24px;
+}
+
+.nh-splash__card {
+  max-width: 380px;
+  width: 100%;
+  padding: 24px;
+  text-align: center;
+  background: $nh-surface;
+  border: 1px solid $nh-line;
+  border-radius: 8px;
+
+  &.is-won {
+    border-color: $nh-hacker-color;
+    box-shadow: 0 0 32px rgba($nh-hacker-color, 0.3);
+  }
+
+  &.is-lost {
+    border-color: $nh-trace-color;
+    box-shadow: 0 0 32px rgba($nh-trace-color, 0.3);
+  }
+
+  &.is-aborted {
+    border-color: $nh-line;
+    box-shadow: none;
+  }
+
+  button {
+    margin-top: 16px;
+    width: 100%;
+    border: 1px solid $nh-line;
+    background: rgba(10, 34, 45, 0.85);
+    color: $nh-text;
+    padding: 8px 10px;
+    cursor: pointer;
+    border-radius: 4px;
+
+    &:hover {
+      border-color: $nh-cyan;
+      background: rgba($nh-cyan, 0.12);
+    }
+  }
+}
+
+.nh-splash__title {
+  margin: 0 0 6px;
+  font-size: 22px;
+  text-shadow: 0 0 12px rgba($nh-cyan, 0.5);
+}
+
+.nh-splash__subtitle {
+  margin: 0 0 16px;
+  color: $nh-muted;
+  font-size: 13px;
+}
+
+.nh-splash__loot {
+  text-align: left;
+
+  h3 {
+    margin: 0 0 6px;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: $nh-cyan;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12px;
+    padding: 6px 8px;
+    background: rgba(10, 34, 45, 0.6);
+    border: 1px solid $nh-line;
+    border-radius: 4px;
+  }
+}
+
+.nh-splash__reward {
+  color: $nh-muted;
+  white-space: nowrap;
+}
+
+.nh-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid $nh-line;
+
+  h2 {
+    margin: 0;
+    color: $nh-text;
+    font-size: 22px;
+    font-weight: 700;
+    text-shadow: 0 0 12px rgba($nh-cyan, 0.6);
+  }
+}
+
+.nh-kicker {
+  margin: 0 0 2px;
+  color: $nh-cyan;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.nh-status {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  color: $nh-muted;
+  font-size: 12px;
+
+  > * {
+    border: 1px solid $nh-line;
+    background: $nh-surface;
+    padding: 4px 8px;
+  }
+}
+
+// Flexbox rather than CSS grid for "fixed sidebar + fill remaining": a grid track's
+// minmax(0, 1fr) should behave the same, but in practice the map column was rendering as a
+// thin sliver instead of filling the remaining width, and flex's explicit flex-basis/grow
+// leaves nothing ambiguous for the browser to get wrong here.
+.nh-grid {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+}
+
+.nh-panel {
+  flex: 0 0 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-right: 1px solid $nh-line;
+  padding-right: 14px;
+  // A safety net, not the primary layout: this panel's height is meant to just fit within
+  // whatever height the map area already establishes, but content added after the window's
+  // one-time "auto height" measurement (e.g. the action list a node selection reveals)
+  // should scroll instead of silently overflowing past the window's fixed bottom edge.
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+.nh-map {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.nh-panel-section {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba($nh-cyan, 0.12);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.nh-actions-section {
+  margin-top: auto;
+  border-bottom: none;
+}
+
+.nh-panel-heading {
+  margin: 0 0 8px;
+  color: $nh-cyan;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.nh-readout {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  color: $nh-muted;
+  text-transform: uppercase;
+  font-size: 11px;
+
+  strong {
+    color: $nh-text;
+    font-size: 18px;
+    text-shadow: 0 0 10px rgba($nh-trace-color, 0.6);
+  }
+}
+
+.nh-bar {
+  height: 12px;
+  overflow: hidden;
+  border: 1px solid rgba($nh-trace-color, 0.55);
+  background: rgba($nh-trace-color, 0.08);
+  box-shadow: inset 0 0 12px rgba($nh-trace-color, 0.16);
+}
+
+.nh-bar__fill {
+  height: 100%;
+  background: linear-gradient(90deg, $nh-hacker-color, $nh-trace-color);
+  box-shadow: 0 0 12px rgba($nh-trace-color, 0.6);
+  transition: width 0.2s ease;
+}
+
+.nh-bar.detected .nh-bar__fill {
+  background: $nh-trace-color;
+}
+
+.nh-bar.paused .nh-bar__fill {
+  background: #888;
+}
+
+.nh-detected-label {
+  color: $nh-trace-color;
+  font-weight: bold;
+}
+
+.nh-notice {
+  border: 1px solid rgba($nh-warn, 0.3);
+  background: rgba($nh-warn, 0.06);
+  color: $nh-muted;
+  padding: 8px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.nh-actions {
+  display: grid;
+  gap: 8px;
+
+  button {
+    width: 100%;
+    border: 1px solid $nh-line;
+    background: rgba(10, 34, 45, 0.85);
+    color: $nh-text;
+    padding: 8px 10px;
+    cursor: pointer;
+
+    &:hover {
+      border-color: $nh-cyan;
+      background: rgba($nh-cyan, 0.12);
+    }
+  }
+}
+
+// Floating contextual menu (NodeContextMenu.vue): a full-viewport transparent backdrop that
+// closes the menu on any outside click, with the menu itself `position: fixed` at the raw
+// click coordinates - see that component's own comment on why it must be mounted outside
+// NodeGraphView's transformed subtree for `fixed` to behave sanely.
+.nh-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
+.nh-context-menu {
+  position: fixed;
+  z-index: 1001;
+  min-width: 190px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  background: $nh-surface;
+  border: 1px solid $nh-line;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  color: $nh-text;
+
+  button {
+    width: 100%;
+    border: 1px solid $nh-line;
+    background: rgba(10, 34, 45, 0.85);
+    color: $nh-text;
+    padding: 7px 10px;
+    cursor: pointer;
+    border-radius: 3px;
+
+    &:hover:not(:disabled) {
+      border-color: $nh-cyan;
+      background: rgba($nh-cyan, 0.12);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 2px;
+    font-size: 12px;
+    text-transform: capitalize;
+
+    i {
+      color: $nh-cyan;
+    }
+  }
+
+  &__type {
+    font-weight: 700;
+  }
+
+  &__dc {
+    margin-left: auto;
+    color: $nh-muted;
+    text-transform: none;
+  }
+
+  &__note {
+    margin: 0;
+    font-size: 11px;
+    color: $nh-muted;
+  }
+}
+
+.nh-map-viewport {
+  position: relative;
+  min-height: 420px;
+  overflow: hidden;
+  border: 1px solid $nh-line;
+  background: rgba(1, 10, 17, 0.62);
+  box-shadow: inset 0 0 44px rgba($nh-cyan, 0.08);
+  cursor: grab;
+
+  &.panning {
+    cursor: grabbing;
+  }
+}
+
+// A fixed-size CSS grid (nodes placed via grid-column/grid-row) rather than percentage
+// positioning against the viewport's own size - ported from hacking-minigame-test's
+// LevelGrid, which uses exactly this technique. .nh-map-inner is the pan/zoom transform
+// target; .nh-map-grid and .nh-links share the same top-left origin so the two overlay
+// exactly, with .nh-links drawing rotated-div connector lines on top (see
+// ConnectorGeometry.ts, also ported directly from that project's NodeConnection class).
+.nh-map-inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+.nh-map-grid {
+  position: relative;
+  display: grid;
+  // Centers each node WITHIN its grid track (a fixed-size grid item otherwise defaults to
+  // "stretch", which for something that isn't actually stretching renders as top-left
+  // alignment) - ConnectorGeometry's math assumes every node sits at its cell's center
+  // (width/2, height/2), so a node that isn't actually centered there makes every
+  // connector line visibly miss it.
+  justify-items: center;
+  align-items: center;
+}
+
+// Note: centering the node WITHIN its grid track (above) is a property of the grid
+// container, not the node itself - a `.nh-map-grid__cell` class on the node's own root
+// element (which is what NodeGraphView actually passes down) only affects that element's
+// own internal layout, not its placement as a grid item. There is deliberately no
+// `.nh-map-grid__cell` rule here for that reason.
+
+.nh-links {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.nh-link {
+  // A real `width` (not `border-left` on a zero-width box) so the box's own center - which
+  // is what CSS rotation pivots around by default, and what ConnectorGeometry's `left` is
+  // adjusted to land on (see ConnectionComponent.vue) - is exactly the visible line's
+  // center too, not offset to one side of it.
+  position: absolute;
+  width: 3px;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(80, 226, 255, 0.5),
+    rgba(80, 226, 255, 0.5) 6px,
+    transparent 6px,
+    transparent 10px
+  );
+  filter: drop-shadow(0 0 3px rgba(80, 226, 255, 0.4));
+
+  &.is-hacker-path {
+    background: $nh-hacker-color;
+    filter: drop-shadow(0 0 6px rgba($nh-hacker-color, 0.85));
+  }
+
+  &.is-trace-path {
+    background: $nh-trace-color;
+    filter: drop-shadow(0 0 6px rgba($nh-trace-color, 0.85));
+  }
+}
+
+// Diamond silhouette (a rotated square) node shape with a glow/color technique underneath -
+// the face content counter-rotates back upright.
+.nh-node {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 1px solid rgba($nh-cyan, 0.75);
+  background: rgba(6, 23, 33, 0.95);
+  box-shadow: 0 0 14px rgba($nh-cyan, 0.4);
+  color: $nh-text;
+  cursor: pointer;
+  transform: rotate(45deg);
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease;
+
+  &:hover:not(:disabled) {
+    transform: rotate(45deg) scale(1.15);
+    border-color: #fff;
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+
+  &.type-server,
+  &.type-exit {
+    width: 46px;
+    height: 46px;
+  }
+
+  // Base per-type coloring, for the Designer (which never applies a status class at all - so
+  // without this every node type looked identically cyan there) and for gameplay before a
+  // node has been touched by either side. Declared BEFORE the status-* rules below on
+  // purpose: same-specificity single-class selectors tie-break by source order, and once a
+  // node actually changes hands its ownership color must win over this base type color.
+  &.type-entry {
+    border-color: #57e08a;
+    box-shadow: 0 0 14px rgba(#57e08a, 0.5);
+  }
+
+  &.type-exit {
+    border-color: #ff9f4d;
+    box-shadow: 0 0 14px rgba(#ff9f4d, 0.5);
+  }
+
+  // Server starts owned by the trace side (see HackNode's constructor), so it's colored to
+  // match trace/enemy red rather than sharing the exit's orange - a status-* ownership class
+  // still wins once it's actually contested (declared after this on purpose, see the note
+  // above about source-order tie-breaking).
+  &.type-server {
+    border-color: $nh-trace-color;
+    box-shadow: 0 0 14px rgba($nh-trace-color, 0.5);
+  }
+
+  &.type-database {
+    border-color: #a987ff;
+    box-shadow: 0 0 14px rgba(#a987ff, 0.5);
+  }
+
+  &.status-owned {
+    border-color: $nh-hacker-color;
+    box-shadow: 0 0 16px rgba($nh-hacker-color, 0.85);
+    background: rgba($nh-hacker-color, 0.22);
+  }
+
+  &.status-enemy {
+    border-color: $nh-trace-color;
+    box-shadow: 0 0 16px rgba($nh-trace-color, 0.85);
+    background: rgba($nh-trace-color, 0.22);
+  }
+
+  &.status-capturing,
+  &.status-enemy-capturing {
+    border-color: $nh-warn;
+    animation: nh-node-pulse 0.9s infinite ease-in-out;
+  }
+
+  &.stopped::after {
+    content: "";
+    position: absolute;
+    inset: -7px;
+    border: 2px dashed $nh-warn;
+  }
+
+  // Current-position marker (HackSession.activeNodeKey) - answers "where am I in this
+  // puzzle" directly, as opposed to what's merely ownable next. Layered on top of whatever
+  // ownership color the node already has.
+  &.active {
+    outline: 2px solid $nh-cyan;
+    outline-offset: 4px;
+    animation: nh-node-active-pulse 1.6s infinite ease-in-out;
+  }
+
+  &.selected {
+    outline: 2px solid $nh-cyan;
+    outline-offset: 4px;
+  }
+}
+
+.nh-node__face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-45deg);
+  font-weight: 700;
+}
+
+// The icon is now the node's primary visual (per-type identity), not a small label
+// alongside the difficulty number - it fills most of the diamond, with the difficulty
+// shown as a small badge in the corner instead of competing with it for space.
+.nh-node__icon {
+  font-size: 24px;
+  opacity: 0.9;
+}
+
+.type-server .nh-node__icon,
+.type-exit .nh-node__icon {
+  font-size: 20px;
+}
+
+.nh-node__core {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  z-index: 1;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 50%;
+  background: $nh-bg-deep;
+  border: 1px solid rgba($nh-cyan, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.nh-node__label {
+  // Counter-rotates the text back upright against the parent .nh-node's rotate(45deg)
+  // diamond silhouette - its exact position can skew slightly off-center for this reason,
+  // an acceptable trade-off since most nodes don't set a label at all.
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) rotate(-45deg);
+  margin-top: 2px;
+  font-size: 9px;
+  white-space: nowrap;
+  color: $nh-muted;
+  text-transform: uppercase;
+}
+
+@keyframes nh-node-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba($nh-warn, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba($nh-warn, 0.95);
+  }
+}
+
+@keyframes nh-node-active-pulse {
+  0%,
+  100% {
+    outline-color: rgba($nh-cyan, 0.35);
+  }
+  50% {
+    outline-color: rgba($nh-cyan, 1);
+  }
+}
+
+// Legend swatches - dots/lines reusing the same node/link color rules above
+// (status-owned/status-enemy/etc.) at a small fixed size.
+.nh-legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 10px;
+  color: $nh-muted;
+  font-size: 10px;
+  text-transform: uppercase;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+}
+
+.nh-legend-dot {
+  flex: 0 0 auto;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1px solid rgba($nh-cyan, 0.75);
+  background: rgba(6, 23, 33, 0.95);
+  box-shadow: 0 0 6px rgba($nh-cyan, 0.4);
+
+  &.status-owned {
+    border-color: $nh-hacker-color;
+    background: rgba($nh-hacker-color, 0.5);
+    box-shadow: 0 0 8px rgba($nh-hacker-color, 0.85);
+  }
+
+  &.status-enemy {
+    border-color: $nh-trace-color;
+    background: rgba($nh-trace-color, 0.5);
+    box-shadow: 0 0 8px rgba($nh-trace-color, 0.85);
+  }
+
+  &.status-capturing {
+    border-color: $nh-warn;
+    box-shadow: 0 0 8px rgba($nh-warn, 0.85);
+  }
+
+  &.type-server {
+    border-radius: 3px;
+    border-color: $nh-trace-color;
+  }
+
+  &.type-exit {
+    border-radius: 3px;
+    border-color: #ff9f4d;
+  }
+
+  &.type-database {
+    border-color: #a987ff;
+  }
+}
+
+.nh-legend-line {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 0;
+  border-top: 2px dashed rgba($nh-cyan, 0.6);
+  filter: drop-shadow(0 0 3px rgba($nh-cyan, 0.5));
+
+  &.is-hacker-path {
+    border-top-style: solid;
+    border-top-color: $nh-hacker-color;
+    filter: drop-shadow(0 0 4px rgba($nh-hacker-color, 0.8));
+  }
+
+  &.is-trace-path {
+    border-top-style: solid;
+    border-top-color: $nh-trace-color;
+    filter: drop-shadow(0 0 4px rgba($nh-trace-color, 0.8));
+  }
+}
+
+.node-hacker-designer-root {
+  box-sizing: border-box;
+  min-height: 480px;
+  padding: 16px;
+  // Every other view wraps in .nh-shell for this same dark backdrop - the Designer never
+  // did, so its light text (meant to sit on this background) was rendering directly on
+  // Foundry's own parchment window background instead, unreadable.
+  background:
+    linear-gradient(rgba($nh-cyan, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba($nh-cyan, 0.05) 1px, transparent 1px),
+    $nh-bg-deep;
+  background-size:
+    24px 24px,
+    24px 24px,
+    auto;
+}
+
+.node-hacker-designer-root__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+
+  // Foundry's own core forms CSS sets `button { width: 100% }` (form buttons are meant to
+  // fill a settings-sheet row by default) - every button here otherwise renders as a
+  // full-width block stacked on its own line instead of sitting inline in this flex row.
+  input[type="text"],
+  select,
+  button {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  input[type="text"],
+  select {
+    background: $nh-surface;
+    color: $nh-text;
+    border: 1px solid $nh-line;
+    border-radius: 4px;
+    padding: 4px 8px;
+  }
+
+  input[type="text"] {
+    flex: 0 1 260px;
+  }
+
+  button {
+    background: rgba($nh-cyan, 0.12);
+    color: $nh-text;
+    border: 1px solid $nh-line;
+    border-radius: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: rgba($nh-cyan, 0.22);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+  }
+}
+
+.node-hacker-designer__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 10px;
+  color: $nh-text;
+
+  label {
+    color: $nh-text;
+  }
+
+  select,
+  input[type="number"] {
+    background: $nh-surface;
+    color: $nh-text;
+    border: 1px solid $nh-line;
+    border-radius: 4px;
+    padding: 2px 6px;
+  }
+
+  .hint {
+    margin: 0;
+    font-size: 12px;
+    opacity: 0.75;
+    flex: 1 1 260px;
+  }
+
+  // Foundry's own core forms CSS sets `button { width: 100% }` - without this, "Center View"
+  // renders as a full-width block stacked on its own line instead of sitting inline here.
+  button {
+    width: auto;
+    flex: 0 0 auto;
+    background: rgba($nh-cyan, 0.12);
+    color: $nh-text;
+    border: 1px solid $nh-line;
+    border-radius: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+
+    &:hover {
+      background: rgba($nh-cyan, 0.22);
+    }
+  }
+}
+
+.node-hacker-designer__body {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+// A fixed-size window onto the (potentially much larger) grid below - pan/zoom moves the
+// grid around inside this via a CSS transform rather than native scrolling, same approach
+// as NodeGraphView's gameplay map viewport.
+.node-hacker-designer__viewport {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 420px;
+  overflow: hidden;
+  background: $nh-bg-deep;
+  border: 1px solid $nh-line;
+  border-radius: 6px;
+  touch-action: none;
+  cursor: grab;
+
+  &.panning {
+    cursor: grabbing;
+  }
+}
+
+.node-hacker-designer__grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  // Dashed grid lines used to just be each empty cell div's own border - now that empty
+  // ground has no DOM element of its own (there's no bound on how far the canvas extends, so
+  // rendering one div per cell isn't practical), a tiled CSS background does the same job
+  // across the whole (very large, see CANVAS_SIZE) grid div at once. 2px lines (rather than
+  // 1px) so they survive the zoom-out scale() transform this div also carries - a 1px line
+  // shrinks to a subpixel width at MIN_ZOOM (0.5x) and antialiases into near-invisibility.
+  background-image:
+    linear-gradient(rgba($nh-cyan, 0.16) 2px, transparent 2px),
+    linear-gradient(90deg, rgba($nh-cyan, 0.16) 2px, transparent 2px);
+  background-size: 72px 72px, 72px 72px;
+}
+
+.node-hacker-designer__links {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  // The grid cells below are also `position: absolute` and come later in the DOM, so without
+  // an explicit stacking order they render on top of this SVG - including over the invisible
+  // hit-lines - and swallow every click before it can ever reach a connection. Raising this
+  // above the cells fixes that, but only in combination with the pointer-events rule below:
+  // an SVG *container* (this root element, or a <g>) is not a shape, so it does NOT get the
+  // paint-aware `visiblePainted` hit-testing that individual shapes (line/path) default to -
+  // its own `pointer-events` initial value is `auto`, which for a container means its entire
+  // box (the whole grid) is a valid click target regardless of what's actually painted inside
+  // it. `none` here (inherited by every child unless a child opts back in) stops that; only
+  // .node-hacker-designer__link-hit explicitly re-enables itself below.
+  z-index: 2;
+  pointer-events: none;
+}
+
+.node-hacker-designer__link {
+  stroke: $nh-hacker-color;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 4px rgba($nh-hacker-color, 0.7));
+  pointer-events: none;
+  transition:
+    stroke 100ms ease,
+    stroke-width 100ms ease;
+
+  &.is-one-way {
+    stroke: $nh-warn;
+  }
+
+  &.is-selected {
+    stroke: $nh-cyan;
+    stroke-width: 4;
+    filter: drop-shadow(0 0 6px rgba($nh-cyan, 0.9));
+  }
+}
+
+.node-hacker-designer__link-arrow {
+  fill: $nh-warn;
+  pointer-events: none;
+  filter: drop-shadow(0 0 3px rgba($nh-warn, 0.8));
+
+  &.is-selected {
+    fill: $nh-cyan;
+    filter: drop-shadow(0 0 4px rgba($nh-cyan, 0.9));
+  }
+}
+
+.node-hacker-designer__link-hit {
+  // Opts back in against the container's own `pointer-events: none` above - `auto` on an SVG
+  // shape (as opposed to a container) resolves to paint-aware hit-testing, so only the
+  // actual 14px-wide transparent-but-painted stroke becomes clickable, not this whole line
+  // element's bounding box.
+  pointer-events: auto;
+  stroke: transparent;
+  stroke-width: 14;
+  cursor: pointer;
+
+  // The hit-line is what actually receives the hover (the visible line itself has
+  // pointer-events: none, and is much thinner than a comfortable hover target) - it comes
+  // right before its visible sibling in the markup, so the general sibling combinator can
+  // reach across and highlight the one the viewer can actually see. Skipped while a
+  // connection is already selected so the hover state doesn't fight the selected styling.
+  &:hover + .node-hacker-designer__link:not(.is-selected) {
+    stroke: $nh-cyan;
+    stroke-width: 4;
+    filter: drop-shadow(0 0 5px rgba($nh-cyan, 0.6));
+  }
+}
+
+.node-hacker-designer__cell {
+  position: absolute;
+  z-index: 1;
+
+  // A connection's hit-line terminates exactly at each node's center (edges connect node
+  // centers), so the links SVG sitting above the grid (z-index 2, needed so its own hit-lines
+  // are actually clickable - see .node-hacker-designer__links) would otherwise intercept every
+  // click aimed at a node's center too. Occupied cells go above that layer so the node itself
+  // takes priority; empty cells stay below it so open-ground clicks along a hit-line still
+  // reach the connection instead.
+  &.has-node {
+    z-index: 3;
+  }
+
+  width: 72px;
+  height: 72px;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .nh-node {
+    position: relative;
+  }
+
+  &.has-node .nh-node {
+    pointer-events: none;
+  }
+
+  &.linking {
+    outline: 2px solid $nh-warn;
+  }
+
+  &.selected {
+    outline: 2px solid $nh-cyan;
+  }
+}
+
+.node-hacker-designer__inspector {
+  flex: 0 0 220px;
+  background: $nh-surface;
+  border: 1px solid $nh-line;
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 420px;
+
+  h4 {
+    margin: 0 0 4px;
+    color: $nh-cyan;
+  }
+
+  // Foundry's parchment-sheet CSS sets a dark brown `label` color meant for a light
+  // background - without overriding it here, these labels inherit that instead of this
+  // panel's own light text color and become nearly unreadable against its dark background.
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 12px;
+    color: $nh-text;
+  }
+
+  select,
+  input,
+  textarea {
+    background: $nh-bg-deep;
+    color: $nh-text;
+    border: 1px solid $nh-line;
+    border-radius: 4px;
+    padding: 3px 6px;
+    font-family: inherit;
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 48px;
+  }
+
+  .hint {
+    font-size: 12px;
+    opacity: 0.75;
+  }
+}
+
+.node-hacker-designer__inspector-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+
+  button {
+    background: rgba($nh-cyan, 0.12);
+    color: $nh-text;
+    border: 1px solid $nh-line;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+
+    &:hover {
+      background: rgba($nh-cyan, 0.22);
+    }
+
+    &.danger {
+      background: rgba($nh-trace-color, 0.18);
+      border-color: rgba($nh-trace-color, 0.6);
+
+      &:hover {
+        background: rgba($nh-trace-color, 0.3);
+      }
+    }
+  }
+}

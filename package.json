@@ -1,0 +1,29 @@
+{
+  "name": "foundryvtt-node-hacker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "watch": "vite build --watch",
+    "dev": "npm run unlink-dev && npm run link-dev && vite",
+    "dev-remote": "npm run unlink-dev && npm run link-dev-dist && vite --port 30001",
+    "typecheck": "vue-tsc --noEmit",
+    "link-dev": "./linkDevEnv.bat",
+    "link-dev-dist": "./linkDevEnvDist.bat",
+    "unlink-dev": "./unlinkDevEnv.bat",
+    "relink-dist": "npm run unlink-dev && npm run link-dev-dist"
+  },
+  "dependencies": {
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.0",
+    "fvtt-types": "npm:@league-of-foundry-developers/foundry-vtt-types@latest",
+    "sass": "^1.77.0",
+    "terser": "^5.51.2",
+    "typescript": "^5.4.0",
+    "vite": "^8.3.0",
+    "vue-tsc": "^2.0.0"
+  }
+}

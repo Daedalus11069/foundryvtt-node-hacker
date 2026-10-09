@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../systems/foundry-faserip"
+		}
+	],
+	"settings": {}
+}

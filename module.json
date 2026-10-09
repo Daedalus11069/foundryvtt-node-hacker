@@ -1,0 +1,42 @@
+{
+  "id": "foundryvtt-node-hacker",
+  "title": "Node Hacker",
+  "description": "A node-graph hacking minigame for Foundry VTT. System-agnostic difficulty checks, GM-managed live traces, nuke/stop virus items, hidden databases, and a GM node graph designer.",
+  "version": "0.1.0",
+  "compatibility": {
+    "minimum": "14",
+    "verified": "14"
+  },
+  "authors": [
+    {
+      "name": "Daedalus11069"
+    }
+  ],
+  "esmodules": ["dev-env.js"],
+  "socket": true,
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "relationships": {
+    "recommends": [
+      {
+        "id": "lib-wrapper",
+        "type": "module",
+        "compatibility": {}
+      },
+      {
+        "id": "socketlib",
+        "type": "module",
+        "compatibility": {}
+      }
+    ]
+  },
+  "url": "",
+  "manifest": "",
+  "download": "",
+  "license": "LICENSE"
+}
